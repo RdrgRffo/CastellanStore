@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #1A1A1A;
+    background-color: #FFFFFF;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+  }
+}
+
+@layer components {
+  .container-premium {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn-primary {
+    @apply bg-premium-black text-white px-8 py-3 text-sm font-medium tracking-wider uppercase 
+           transition-all duration-300 hover:bg-cuero-500;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-premium-black text-premium-black px-8 py-3 text-sm font-medium 
+           tracking-wider uppercase transition-all duration-300 hover:bg-premium-black hover:text-white;
+  }
+
+  .btn-cuero {
+    @apply bg-cuero-500 text-white px-8 py-3 text-sm font-medium tracking-wider uppercase 
+           transition-all duration-300 hover:bg-cuero-600;
+  }
+
+  .section-title {
+    @apply text-2xl md:text-3xl font-display font-semibold uppercase tracking-wider text-premium-black;
+  }
+
+  .section-subtitle {
+    @apply text-premium-gray-dark text-sm md:text-base font-light;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-premium-hover hover:-translate-y-1;
+  }
+
+  .input-premium {
+    @apply w-full border border-premium-gray px-4 py-3 text-sm text-premium-black 
+           placeholder:text-premium-gray-dark/50 focus:outline-none focus:border-cuero-500 
+           transition-colors duration-300 bg-transparent;
+  }
+
+  .card-base {
+    @apply bg-white rounded-lg shadow-[3px_3px_12px_rgba(0,0,0,0.06)] p-6;
+  }
+
+  .scroll-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+
+  .scroll-reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Toast animations */
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
+  }
+
+  /* Page transition animations */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.4s ease-out;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+}
