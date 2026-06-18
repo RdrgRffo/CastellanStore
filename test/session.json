@@ -1,0 +1,129 @@
+{
+  "_": {
+    "postman_variable_scope": "environment",
+    "postman_exported_at": "2026-06-27T10:18:07.966Z",
+    "postman_exported_using": "Newman/6.2.2"
+  },
+  "id": "a4c22d17-732e-462b-a1c7-bfca65a26e97",
+  "name": "CastellanStore - Environment",
+  "values": [
+    {
+      "type": "any",
+      "value": "http://localhost:8000",
+      "key": "baseUrl"
+    },
+    {
+      "type": "any",
+      "value": "admin@castellan.com",
+      "key": "adminEmail"
+    },
+    {
+      "type": "any",
+      "value": "Admin123!",
+      "key": "adminPassword"
+    },
+    {
+      "type": "any",
+      "value": "testuser@example.com",
+      "key": "userEmail"
+    },
+    {
+      "type": "any",
+      "value": "Test1234!",
+      "key": "userPassword"
+    },
+    {
+      "type": "any",
+      "value": "1990-05-15",
+      "key": "userBirthDate"
+    },
+    {
+      "type": "any",
+      "value": "Test User",
+      "key": "userName"
+    },
+    {
+      "type": "any",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTNmODhlNmEwOTY4OTkyZWYyY2M2MjQiLCJyb2xlIjoiUk9MRV9VU0VSIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTc4MjU1NTQxOSwiZXhwIjoxNzgzMTYwMjE5fQ.q0LMmA1GjBKiklJ6SuyMTN27j7bMSf9qU1mrdcutr8k",
+      "key": "userToken"
+    },
+    {
+      "type": "any",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTNmODRiZWEwOTY4OTkyZWYyY2M1MWQiLCJyb2xlIjoiUk9MRV9NQU5BR0VSIiwibmFtZSI6IkFkbWluIENhc3RlbGxhbiIsImlhdCI6MTc4MjU1NTQxOCwiZXhwIjoxNzgzMTYwMjE4fQ.Bq7VM0t3SK8zOtBdnUVGD0Gw_fRNy5NCUcrwjufsrpA",
+      "key": "adminToken"
+    },
+    {
+      "type": "any",
+      "value": "6a3ea4b22fa7f8f11b11cb98",
+      "key": "userId"
+    },
+    {
+      "type": "any",
+      "value": "6a3f8444a0968992ef2cc4dc",
+      "key": "watchId"
+    },
+    {
+      "type": "any",
+      "value": "6a3fa32ba1880b70df4f1c5f",
+      "key": "orderId"
+    },
+    {
+      "type": "any",
+      "value": "CAST-A06C762C",
+      "key": "orderNumber"
+    },
+    {
+      "type": "any",
+      "value": "6a3fa341a1880b70df4f1c87",
+      "key": "productId"
+    },
+    {
+      "type": "any",
+      "value": "6a3fa349a1880b70df4f1ca4",
+      "key": "couponId"
+    },
+    {
+      "type": "any",
+      "value": "",
+      "key": "filename"
+    },
+    {
+      "type": "any",
+      "value": "pi_3Tmd7X8aljLm51Vd1bxmPKUy",
+      "key": "paymentIntentId"
+    },
+    {
+      "type": "any",
+      "value": "pi_3Tmd7X8aljLm51Vd1bxmPKUy_secret_7iYSvMvxfUe04U0eoNxEU40KQ",
+      "key": "clientSecret"
+    },
+    {
+      "type": "any",
+      "value": "6a3f84bfa0968992ef2cc614",
+      "key": "activityLogId"
+    },
+    {
+      "type": "any",
+      "value": "6a3fa350a1880b70df4f1cbc",
+      "key": "cancelOrderId"
+    },
+    {
+      "type": "any",
+      "value": "CAST-44B93AE7",
+      "key": "cancelOrderNumber"
+    },
+    {
+      "type": "any",
+      "value": "6a3f8fa8a1880b70df4f1633",
+      "key": "reviewId"
+    },
+    {
+      "type": "any",
+      "value": "6a3fa34da1880b70df4f1cb1",
+      "key": "addressId"
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-06-27T10:18:10.990Z",
+  "_postman_exported_using": "Newman/6.2.2"
+}

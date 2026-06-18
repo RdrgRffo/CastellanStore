@@ -1,0 +1,245 @@
+{
+  "info": {
+    "name": "CastellanStore - Cart API",
+    "description": "Endpoints del carrito de compras (requieren autenticación)."
+  },
+  "item": [
+    {
+      "name": "Obtener carrito",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Carrito obtenido', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const cartSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": { \"type\": \"object\" }",
+              "  }",
+              "};",
+              "pm.test('El esquema del carrito es válido', () => {",
+              "  pm.expect(tv4.validate(json, cartSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/cart",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "cart"]
+        }
+      }
+    },
+    {
+      "name": "Agregar producto al carrito",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Producto agregado', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const addSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"items\"],",
+              "      \"properties\": {",
+              "        \"items\": { \"type\": \"array\" }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de agregar producto es válido', () => {",
+              "  pm.expect(tv4.validate(json, addSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"watchId\": \"{{watchId}}\",\n  \"quantity\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/cart",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "cart"]
+        }
+      }
+    },
+    {
+      "name": "Sincronizar carrito",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Carrito sincronizado', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const syncSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"items\"],",
+              "      \"properties\": {",
+              "        \"items\": { \"type\": \"array\" }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de sincronización es válido', () => {",
+              "  pm.expect(tv4.validate(json, syncSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\n    {\n      \"watchId\": \"{{watchId}}\",\n      \"quantity\": 2\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/cart/sync",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "cart", "sync"]
+        }
+      }
+    },
+    {
+      "name": "Actualizar cantidad de item",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Cantidad actualizada', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const updateSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de actualización es válido', () => {",
+              "  pm.expect(tv4.validate(json, updateSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"quantity\": 3\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/cart/{{watchId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "cart", "{{watchId}}"]
+        }
+      }
+    },
+    {
+      "name": "Eliminar item del carrito",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Item eliminado', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const deleteSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de eliminación es válido', () => {",
+              "  pm.expect(tv4.validate(json, deleteSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/cart/{{watchId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "cart", "{{watchId}}"]
+        }
+      }
+    },
+    {
+      "name": "Error: Carrito sin token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 401 - No autorizado', () => { pm.response.to.have.status(401); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"message\"],",
+              "  \"properties\": {",
+              "    \"message\": { \"type\": \"string\", \"enum\": [\"Token no proporcionado\"] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 401 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/cart",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "cart"]
+        }
+      }
+    }
+  ]
+}

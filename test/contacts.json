@@ -1,0 +1,83 @@
+{
+  "info": {
+    "name": "CastellanStore - Contacts API",
+    "description": "Endpoints de contacto: enviar formulario de contacto (público)."
+  },
+  "item": [
+    {
+      "name": "Enviar formulario de contacto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201 - Mensaje enviado', () => { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "const contactSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"message\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"message\": { \"type\": \"string\" }",
+              "  }",
+              "};",
+              "pm.test('El esquema de contacto es válido', () => {",
+              "  pm.expect(tv4.validate(json, contactSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Juan Pérez\",\n  \"email\": \"juan@example.com\",\n  \"subject\": \"Consulta sobre producto\",\n  \"message\": \"Me gustaría saber si tienen el modelo Classic en stock.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contacts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contacts"]
+        }
+      }
+    },
+    {
+      "name": "Error: Datos de contacto incompletos",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400 - Datos inválidos', () => { pm.response.to.have.status(400); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [false] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 400 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"\",\n  \"email\": \"email-invalido\",\n  \"subject\": \"\",\n  \"message\": \"\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contacts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contacts"]
+        }
+      }
+    }
+  ]
+}

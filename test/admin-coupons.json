@@ -1,0 +1,221 @@
+{
+  "info": {
+    "name": "CastellanStore - Admin Coupons API",
+    "description": "Endpoints de administración de cupones: CRUD de cupones (requiere ROLE_MANAGER)."
+  },
+  "item": [
+    {
+      "name": "Listar todos los cupones (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Cupones listados', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const listSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"coupons\", \"total\", \"totalPages\"],",
+              "      \"properties\": {",
+              "        \"coupons\": { \"type\": \"array\", \"minItems\": 1 },",
+              "        \"total\": { \"type\": \"number\" },",
+              "        \"totalPages\": { \"type\": \"number\" }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de listado de cupones admin es válido', () => {",
+              "  pm.expect(tv4.validate(json, listSchema)).to.be.true;",
+              "});",
+              "pm.environment.set('couponId', json.data.coupons[0]._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/coupons",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "coupons"]
+        }
+      }
+    },
+    {
+      "name": "Crear nuevo cupón (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201 - Cupón creado', () => { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "const createSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"code\", \"discount\"],",
+              "      \"properties\": {",
+              "        \"code\": { \"type\": \"string\", \"enum\": [\"TEST10\"] },",
+              "        \"discount\": { \"type\": \"number\", \"enum\": [10] }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de cupón creado es válido', () => {",
+              "  pm.expect(tv4.validate(json, createSchema)).to.be.true;",
+              "});",
+              "pm.environment.set('couponId', json.data._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"TEST10\",\n  \"discount\": 10,\n  \"type\": \"percentage\",\n  \"expiresAt\": \"2027-12-31T23:59:59.000Z\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/coupons",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "coupons"]
+        }
+      }
+    },
+    {
+      "name": "Actualizar cupón (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Cupón actualizado', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const updateSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"discount\"],",
+              "      \"properties\": {",
+              "        \"discount\": { \"type\": \"number\", \"enum\": [15] }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de cupón actualizado es válido', () => {",
+              "  pm.expect(tv4.validate(json, updateSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"discount\": 15\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/coupons/{{couponId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "coupons", "{{couponId}}"]
+        }
+      }
+    },
+    {
+      "name": "Eliminar cupón (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Cupón eliminado', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const deleteSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de eliminación es válido', () => {",
+              "  pm.expect(tv4.validate(json, deleteSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/coupons/{{couponId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "coupons", "{{couponId}}"]
+        }
+      }
+    },
+    {
+      "name": "Error: Crear cupón sin token de admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 401 - No autorizado', () => { pm.response.to.have.status(401); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"message\"],",
+              "  \"properties\": {",
+              "    \"message\": { \"type\": \"string\", \"enum\": [\"Token no proporcionado\"] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 401 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"NOAUTH\",\n  \"discount\": 5\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/coupons",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "coupons"]
+        }
+      }
+    }
+  ]
+}

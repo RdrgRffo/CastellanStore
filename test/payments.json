@@ -1,0 +1,311 @@
+{
+  "info": {
+    "name": "CastellanStore - Payments API (Stripe)",
+    "description": "Endpoints de pago con Stripe: configuración, creación de payment intent, reembolsos y webhook."
+  },
+  "item": [
+    {
+      "name": "Obtener configuración de Stripe (público)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Config obtenida', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('El esquema de configuración Stripe es válido', () => {",
+              "  pm.expect(json).to.be.an('object');",
+              "  if (json.publishableKey !== undefined) {",
+              "    pm.expect(json.publishableKey).to.be.a('string');",
+              "  }",
+              "  if (json.stripeEnabled !== undefined) {",
+              "    pm.expect(json.stripeEnabled).to.be.a('boolean');",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/payments/config",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "payments", "config"]
+        }
+      }
+    },
+    {
+      "name": "Crear Payment Intent (autenticado)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "  pm.test('Status 201 - Payment Intent creado', () => { pm.response.to.have.status(201); });",
+              "  const intentSchema = {",
+              "    \"type\": \"object\",",
+              "    \"required\": [\"success\", \"data\"],",
+              "    \"properties\": {",
+              "      \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "      \"data\": {",
+              "        \"type\": \"object\",",
+              "        \"required\": [\"clientSecret\", \"paymentIntentId\", \"amount\"],",
+              "        \"properties\": {",
+              "          \"clientSecret\": { \"type\": \"string\" },",
+              "          \"paymentIntentId\": { \"type\": \"string\" },",
+              "          \"amount\": { \"type\": \"number\" }",
+              "        }",
+              "      }",
+              "    }",
+              "  };",
+              "  pm.test('El esquema de Payment Intent es válido', () => {",
+              "    pm.expect(tv4.validate(json, intentSchema)).to.be.true;",
+              "  });",
+              "  pm.environment.set('paymentIntentId', json.data.paymentIntentId);",
+              "  pm.environment.set('clientSecret', json.data.clientSecret);",
+              "} else {",
+              "  pm.test('Status 500 - Stripe no configurado (esperado en desarrollo)', () => { pm.response.to.have.status(500); });",
+              "  const errorSchema = {",
+              "    \"type\": \"object\",",
+              "    \"required\": [\"success\"],",
+              "    \"properties\": {",
+              "      \"success\": { \"type\": \"boolean\", \"enum\": [false] }",
+              "    }",
+              "  };",
+              "  pm.test('El esquema de error 500 es válido', () => {",
+              "    pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"eur\",\n  \"orderId\": \"{{orderId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/payments/create-intent",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "payments", "create-intent"]
+        }
+      }
+    },
+    {
+      "name": "Error: Crear Payment Intent sin autenticación",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 401 - No autorizado', () => { pm.response.to.have.status(401); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"message\"],",
+              "  \"properties\": {",
+              "    \"message\": { \"type\": \"string\", \"enum\": [\"Token no proporcionado\"] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 401 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"eur\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/payments/create-intent",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "payments", "create-intent"]
+        }
+      }
+    },
+    {
+      "name": "Reembolsar pago (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (pm.response.code === 200) {",
+              "  pm.test('Status 200 - Reembolso procesado', () => { pm.response.to.have.status(200); });",
+              "  const refundSchema = {",
+              "    \"type\": \"object\",",
+              "    \"required\": [\"success\", \"data\"],",
+              "    \"properties\": {",
+              "      \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "      \"data\": {",
+              "        \"type\": \"object\",",
+              "        \"required\": [\"refundId\", \"status\"],",
+              "        \"properties\": {",
+              "          \"refundId\": { \"type\": \"string\" },",
+              "          \"status\": { \"type\": \"string\", \"enum\": [\"succeeded\"] }",
+              "        }",
+              "      }",
+              "    }",
+              "  };",
+              "  pm.test('El esquema de reembolso es válido', () => {",
+              "    pm.expect(tv4.validate(json, refundSchema)).to.be.true;",
+              "  });",
+              "} else if (pm.response.code === 400) {",
+              "  pm.test('Status 400 - Pago no asociado o Stripe no configurado', () => { pm.response.to.have.status(400); });",
+              "  const errorSchema = {",
+              "    \"type\": \"object\",",
+              "    \"required\": [\"success\"],",
+              "    \"properties\": {",
+              "      \"success\": { \"type\": \"boolean\", \"enum\": [false] }",
+              "    }",
+              "  };",
+              "  pm.test('El esquema de error 400 es válido', () => {",
+              "    pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "  });",
+              "} else {",
+              "  pm.test('Status 500 - Stripe no configurado (esperado en desarrollo)', () => { pm.response.to.have.status(500); });",
+              "  const errorSchema = {",
+              "    \"type\": \"object\",",
+              "    \"required\": [\"success\"],",
+              "    \"properties\": {",
+              "      \"success\": { \"type\": \"boolean\", \"enum\": [false] }",
+              "    }",
+              "  };",
+              "  pm.test('El esquema de error 500 es válido', () => {",
+              "    pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"paymentIntentId\": \"{{paymentIntentId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/payments/refund",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "payments", "refund"]
+        }
+      }
+    },
+    {
+      "name": "Error: Reembolsar sin token de admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 401 - No autorizado', () => { pm.response.to.have.status(401); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"message\"],",
+              "  \"properties\": {",
+              "    \"message\": { \"type\": \"string\", \"enum\": [\"Token no proporcionado\"] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 401 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paymentIntentId\": \"pi_test_invalid\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/payments/refund",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "payments", "refund"]
+        }
+      }
+    },
+    {
+      "name": "Error: Reembolsar con token de usuario normal",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (pm.response.code === 403) {",
+              "  pm.test('Status 403 - Prohibido', () => { pm.response.to.have.status(403); });",
+              "  const forbiddenSchema = {",
+              "    \"type\": \"object\",",
+              "    \"required\": [\"message\"],",
+              "    \"properties\": {",
+              "      \"message\": { \"type\": \"string\", \"enum\": [\"Acceso denegado. Se requieren permisos de administrador\"] }",
+              "    }",
+              "  };",
+              "  pm.test('El esquema de error 403 es válido', () => {",
+              "    pm.expect(tv4.validate(json, forbiddenSchema)).to.be.true;",
+              "  });",
+              "} else {",
+              "  pm.test('Status 500 - Stripe no configurado (esperado en desarrollo)', () => { pm.response.to.have.status(500); });",
+              "  const errorSchema = {",
+              "    \"type\": \"object\",",
+              "    \"required\": [\"success\"],",
+              "    \"properties\": {",
+              "      \"success\": { \"type\": \"boolean\", \"enum\": [false] }",
+              "    }",
+              "  };",
+              "  pm.test('El esquema de error 500 es válido', () => {",
+              "    pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paymentIntentId\": \"pi_test_invalid\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/payments/refund",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "payments", "refund"]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "info": {
+    "name": "CastellanStore - Invoices API",
+    "description": "Endpoints de facturas: obtener factura por número de pedido (público)."
+  },
+  "item": [
+    {
+      "name": "Obtener factura por número de pedido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Factura obtenida', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const invoiceSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"invoiceNumber\", \"items\", \"total\"],",
+              "      \"properties\": {",
+              "        \"invoiceNumber\": { \"type\": \"string\" },",
+              "        \"items\": { \"type\": \"array\" },",
+              "        \"total\": { \"type\": \"number\" }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de la factura es válido', () => {",
+              "  pm.expect(tv4.validate(json, invoiceSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/invoices/{{orderNumber}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "invoices", "{{orderNumber}}"]
+        }
+      }
+    },
+    {
+      "name": "Error: Factura no encontrada",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 404 - Factura no encontrada', () => { pm.response.to.have.status(404); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [false] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/invoices/INV-NOEXISTE-999",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "invoices", "INV-NOEXISTE-999"]
+        }
+      }
+    }
+  ]
+}

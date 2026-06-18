@@ -1,0 +1,174 @@
+{
+  "info": {
+    "name": "CastellanStore - Cancel Order API",
+    "description": "Endpoints de cancelación de pedidos: cancelar pedido pendiente, verificar historial de estados, errores de autorización."
+  },
+  "item": [
+    {
+      "name": "Crear pedido para cancelar",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201 - Pedido creado', () => { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "const orderSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"_id\", \"status\"],",
+              "      \"properties\": {",
+              "        \"_id\": { \"type\": \"string\" },",
+              "        \"orderNumber\": { \"type\": \"string\" },",
+              "        \"status\": { \"type\": \"string\", \"enum\": [\"confirmed\"] }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema del pedido es válido', () => {",
+              "  pm.expect(tv4.validate(json, orderSchema)).to.be.true;",
+              "});",
+              "pm.environment.set('cancelOrderId', json.data._id);",
+              "pm.environment.set('cancelOrderNumber', json.data.orderNumber);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\n    {\n      \"watchId\": \"{{watchId}}\",\n      \"name\": \"Reloj de prueba\",\n      \"price\": 199.99,\n      \"quantity\": 1\n    }\n  ],\n  \"subtotal\": 199.99,\n  \"discount\": 0,\n  \"shipping\": 4.99,\n  \"total\": 204.98,\n  \"shippingInfo\": {\n    \"name\": \"Test User\",\n    \"email\": \"testuser@example.com\",\n    \"address\": \"Calle Principal 123\",\n    \"city\": \"Madrid\",\n    \"zip\": \"28001\",\n    \"country\": \"España\"\n  },\n  \"paymentInfo\": {\n    \"cardNumber\": \"4111111111111111\",\n    \"cardName\": \"Test User\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/orders",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "orders"]
+        }
+      }
+    },
+    {
+      "name": "Cancelar pedido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Pedido cancelado', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const cancelSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"status\", \"statusHistory\"],",
+              "      \"properties\": {",
+              "        \"status\": { \"type\": \"string\", \"enum\": [\"cancelled\"] },",
+              "        \"statusHistory\": { \"type\": \"array\", \"minItems\": 1 }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de cancelación es válido', () => {",
+              "  pm.expect(tv4.validate(json, cancelSchema)).to.be.true;",
+              "});",
+              "const lastStatus = json.data.statusHistory[json.data.statusHistory.length - 1];",
+              "pm.expect(lastStatus.status).to.eql('cancelled');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/orders/{{cancelOrderId}}/cancel",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "orders", "{{cancelOrderId}}", "cancel"]
+        }
+      }
+    },
+    {
+      "name": "Error: Cancelar pedido ya cancelado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400/409 - No se puede cancelar', () => { pm.expect(pm.response.code).to.be.oneOf([400, 409]); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"message\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [false] },",
+              "    \"message\": { \"type\": \"string\" }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 400 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});",
+              "pm.expect(json.message).to.include('cancelar');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/orders/{{cancelOrderId}}/cancel",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "orders", "{{cancelOrderId}}", "cancel"]
+        }
+      }
+    },
+    {
+      "name": "Error: Cancelar pedido sin token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 401 - No autorizado', () => { pm.response.to.have.status(401); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"message\"],",
+              "  \"properties\": {",
+              "    \"message\": { \"type\": \"string\", \"enum\": [\"Token no proporcionado\"] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 401 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/orders/{{cancelOrderId}}/cancel",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "orders", "{{cancelOrderId}}", "cancel"]
+        }
+      }
+    }
+  ]
+}

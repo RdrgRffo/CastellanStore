@@ -1,0 +1,136 @@
+{
+  "info": {
+    "name": "CastellanStore - Admin Orders API",
+    "description": "Endpoints de administración de pedidos: listar, actualizar estado (requiere ROLE_MANAGER)."
+  },
+  "item": [
+    {
+      "name": "Listar todos los pedidos (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Pedidos listados', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const listSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"data\", \"totalItems\", \"totalPages\"],",
+              "      \"properties\": {",
+              "        \"data\": { \"type\": \"array\", \"minItems\": 1 },",
+              "        \"totalItems\": { \"type\": \"number\" },",
+              "        \"totalPages\": { \"type\": \"number\" }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de listado de pedidos admin es válido', () => {",
+              "  pm.expect(tv4.validate(json, listSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/orders",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "orders"]
+        }
+      }
+    },
+    {
+      "name": "Actualizar estado de pedido (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Estado actualizado', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const statusSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"status\"],",
+              "      \"properties\": {",
+              "        \"status\": { \"type\": \"string\", \"enum\": [\"shipped\"] }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de estado actualizado es válido', () => {",
+              "  pm.expect(tv4.validate(json, statusSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"shipped\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "orders", "{{orderId}}", "status"]
+        }
+      }
+    },
+    {
+      "name": "Error: Actualizar estado sin token de admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 401 - No autorizado', () => { pm.response.to.have.status(401); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"message\"],",
+              "  \"properties\": {",
+              "    \"message\": { \"type\": \"string\", \"enum\": [\"Token no proporcionado\"] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 401 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"shipped\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "orders", "{{orderId}}", "status"]
+        }
+      }
+    }
+  ]
+}

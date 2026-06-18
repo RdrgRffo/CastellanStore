@@ -1,0 +1,266 @@
+{
+  "info": {
+    "name": "CastellanStore - Admin Products API",
+    "description": "Endpoints de administración de productos: CRUD, stock, imágenes (requiere ROLE_MANAGER)."
+  },
+  "item": [
+    {
+      "name": "Listar todos los productos (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Productos listados', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const paginatedSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"data\"],",
+              "      \"properties\": {",
+              "        \"data\": { \"type\": \"array\", \"minItems\": 1 }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de listado de productos es válido', () => {",
+              "  pm.expect(tv4.validate(json, paginatedSchema)).to.be.true;",
+              "});",
+              "pm.environment.set('productId', json.data.data[0]._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/products",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "products"]
+        }
+      }
+    },
+    {
+      "name": "Crear nuevo producto (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201 - Producto creado', () => { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "const createSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"name\", \"price\"],",
+              "      \"properties\": {",
+              "        \"name\": { \"type\": \"string\", \"enum\": [\"Reloj Test Postman\"] },",
+              "        \"price\": { \"type\": \"number\", \"enum\": [299.99] }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de producto creado es válido', () => {",
+              "  pm.expect(tv4.validate(json, createSchema)).to.be.true;",
+              "});",
+              "pm.environment.set('productId', json.data._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Reloj Test Postman\",\n  \"description\": \"Reloj de prueba creado desde Postman\",\n  \"price\": 299.99,\n  \"category\": \"clasicos-vestir\",\n  \"brand\": \"TestBrand\",\n  \"stock\": 10,\n  \"featured\": false\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/products",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "products"]
+        }
+      }
+    },
+    {
+      "name": "Actualizar producto (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Producto actualizado', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const updateSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"price\"],",
+              "      \"properties\": {",
+              "        \"price\": { \"type\": \"number\", \"enum\": [249.99] }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de producto actualizado es válido', () => {",
+              "  pm.expect(tv4.validate(json, updateSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"price\": 249.99,\n  \"stock\": 15\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/products/{{productId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "products", "{{productId}}"]
+        }
+      }
+    },
+    {
+      "name": "Actualizar stock del producto (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Stock actualizado', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const stockSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"stock\"],",
+              "      \"properties\": {",
+              "        \"stock\": { \"type\": \"number\", \"enum\": [20] }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de stock actualizado es válido', () => {",
+              "  pm.expect(tv4.validate(json, stockSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"stock\": 20\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/products/{{productId}}/stock",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "products", "{{productId}}", "stock"]
+        }
+      }
+    },
+    {
+      "name": "Eliminar producto (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Producto eliminado', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const deleteSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de eliminación es válido', () => {",
+              "  pm.expect(tv4.validate(json, deleteSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/products/{{productId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "products", "{{productId}}"]
+        }
+      }
+    },
+    {
+      "name": "Error: Crear producto sin token de admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 401 - No autorizado', () => { pm.response.to.have.status(401); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"message\"],",
+              "  \"properties\": {",
+              "    \"message\": { \"type\": \"string\", \"enum\": [\"Token no proporcionado\"] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 401 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Producto sin token\",\n  \"price\": 100\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/products",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "products"]
+        }
+      }
+    }
+  ]
+}

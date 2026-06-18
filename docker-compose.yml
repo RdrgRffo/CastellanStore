@@ -1,0 +1,121 @@
+# ============================================
+# CastellanStore — Docker Compose
+# ============================================
+# Levanta 4 contenedores:
+#   - frontend (Nginx + React SPA)
+#   - backend  (Node.js + Express + TypeScript)
+#   - mongodb  (Base de datos)
+#   - minio    (Almacenamiento S3 para imágenes)
+#
+# Uso:
+#   docker compose up --build
+#   Abrir http://localhost:9099
+# ============================================
+
+services:
+  # ==========================================
+  # MongoDB (Base de datos)
+  # ==========================================
+  mongodb:
+    image: mongo:7
+    container_name: castellan-mongodb
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT_DB:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # ==========================================
+  # MinIO (Almacenamiento S3)
+  # ==========================================
+  minio:
+
+    image: minio/minio:latest
+    container_name: castellan-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ==========================================
+  # Backend (API Express + TypeScript)
+  # ==========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: castellan-backend
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT_API:-9100}:9100"
+    env_file:
+      - ./backend/.env
+    environment:
+      - PORT=9100
+      - MONGODB_URI=mongodb://mongodb:27017/castellanstore
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-http://minio:9000}
+      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9000}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET=${MINIO_BUCKET:-castellan-images}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - RESEND_FROM=${RESEND_FROM:-Castellan Store <noreply@animalwatch.es>}
+    volumes:
+      - ./frontend/public/db.json:/public/db.json
+      - ./frontend/public/images:/public/images
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # ==========================================
+  # Frontend (Nginx + React SPA)
+  # ==========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: castellan-frontend
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT_FRONT:-9099}:80"
+    env_file:
+      - ./frontend/.env
+    environment:
+      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  mongodb_data:
+    driver: local
+  minio_data:
+    driver: local

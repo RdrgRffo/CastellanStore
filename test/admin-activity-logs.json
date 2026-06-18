@@ -1,0 +1,273 @@
+{
+  "info": {
+    "name": "CastellanStore - Admin Activity Logs & Rollback API",
+    "description": "Endpoints de logs de actividad con rollback: listar logs, paginación, ejecutar rollback y casos de error (requiere ROLE_MANAGER)."
+  },
+  "item": [
+    {
+      "name": "Listar logs de actividad (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Logs listados', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const listSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"data\", \"totalItems\", \"totalPages\"],",
+              "      \"properties\": {",
+              "        \"data\": { \"type\": \"array\", \"minItems\": 1 },",
+              "        \"totalItems\": { \"type\": \"number\" },",
+              "        \"totalPages\": { \"type\": \"number\" }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de listado de logs es válido', () => {",
+              "  pm.expect(tv4.validate(json, listSchema)).to.be.true;",
+              "});",
+              "// Guardar el primer log ID para usarlo en rollback",
+              "const logs = json.data.data;",
+              "if (logs.length > 0 && logs[0]._id) {",
+              "  pm.environment.set('activityLogId', logs[0]._id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/activity-logs",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "activity-logs"]
+        }
+      }
+    },
+    {
+      "name": "Listar logs con paginación (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - Logs paginados', () => { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const paginatedSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"data\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "    \"data\": {",
+              "      \"type\": \"object\",",
+              "      \"required\": [\"data\", \"totalItems\", \"totalPages\"],",
+              "      \"properties\": {",
+              "        \"data\": { \"type\": \"array\", \"maxItems\": 5 },",
+              "        \"totalItems\": { \"type\": \"number\" },",
+              "        \"totalPages\": { \"type\": \"number\" }",
+              "      }",
+              "    }",
+              "  }",
+              "};",
+              "pm.test('El esquema de logs paginados es válido', () => {",
+              "  pm.expect(tv4.validate(json, paginatedSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/activity-logs?page=0&size=5",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "activity-logs"],
+          "query": [
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "5" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Ejecutar rollback sobre un log (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (pm.response.code === 200) {",
+              "  pm.test('Status 200 - Rollback ejecutado', () => { pm.response.to.have.status(200); });",
+              "  const rollbackSchema = {",
+              "    \"type\": \"object\",",
+              "    \"required\": [\"success\", \"data\"],",
+              "    \"properties\": {",
+              "      \"success\": { \"type\": \"boolean\", \"enum\": [true] },",
+              "      \"data\": {",
+              "        \"type\": \"object\",",
+              "        \"required\": [\"message\"],",
+              "        \"properties\": {",
+              "          \"message\": { \"type\": \"string\" }",
+              "        }",
+              "      }",
+              "    }",
+              "  };",
+              "  pm.test('El esquema de rollback exitoso es válido', () => {",
+              "    pm.expect(tv4.validate(json, rollbackSchema)).to.be.true;",
+              "  });",
+              "  pm.expect(json.data.message).to.include('revertida');",
+              "} else {",
+              "  pm.test('Status 400/404 - Rollback no aplicable (esperado)', () => {",
+              "    pm.expect(pm.response.code).to.be.oneOf([400, 404, 409]);",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/activity-logs/{{activityLogId}}/rollback",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "activity-logs", "{{activityLogId}}", "rollback"]
+        }
+      }
+    },
+    {
+      "name": "Error: Rollback con ID inválido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 404 - Log no encontrado', () => { pm.response.to.have.status(404); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"success\", \"message\"],",
+              "  \"properties\": {",
+              "    \"success\": { \"type\": \"boolean\", \"enum\": [false] },",
+              "    \"message\": { \"type\": \"string\" }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 404 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});",
+              "pm.expect(json.message).to.include('no encontrado');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/activity-logs/000000000000000000000000/rollback",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "activity-logs", "000000000000000000000000", "rollback"]
+        }
+      }
+    },
+    {
+      "name": "Error: Listar logs sin token de admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 401 - No autorizado', () => { pm.response.to.have.status(401); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"message\"],",
+              "  \"properties\": {",
+              "    \"message\": { \"type\": \"string\", \"enum\": [\"Token no proporcionado\"] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 401 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/activity-logs",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "activity-logs"]
+        }
+      }
+    },
+    {
+      "name": "Error: Rollback sin token de admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 401 - No autorizado', () => { pm.response.to.have.status(401); });",
+              "const json = pm.response.json();",
+              "const errorSchema = {",
+              "  \"type\": \"object\",",
+              "  \"required\": [\"message\"],",
+              "  \"properties\": {",
+              "    \"message\": { \"type\": \"string\", \"enum\": [\"Token no proporcionado\"] }",
+              "  }",
+              "};",
+              "pm.test('El esquema de error 401 es válido', () => {",
+              "  pm.expect(tv4.validate(json, errorSchema)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/activity-logs/{{activityLogId}}/rollback",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "admin", "activity-logs", "{{activityLogId}}", "rollback"]
+        }
+      }
+    }
+  ]
+}
