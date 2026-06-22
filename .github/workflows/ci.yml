@@ -1,0 +1,121 @@
+# ============================================
+# CastellanStore — CI/CD Pipeline
+# ============================================
+# Compila, testea backend y frontend, y ejecuta
+# smoke tests con Postman/Newman post-deploy.
+# ============================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend — Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Build (TypeScript)
+        working-directory: backend
+        run: npm run build
+
+      - name: Lint
+        working-directory: backend
+        run: npm run lint
+
+  frontend:
+    name: Frontend — Build & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+  smoke-tests:
+    name: Smoke Tests (Postman/Newman)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Start services with Docker Compose
+        run: |
+          cp backend/.env.example backend/.env
+          cp frontend/.env.example frontend/.env
+          docker compose up -d --build
+
+      - name: Wait for backend health
+        run: |
+          echo "Waiting for backend..."
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:9100/api/health > /dev/null 2>&1; then
+              echo "Backend is ready!"
+              break
+            fi
+            sleep 5
+          done
+
+      - name: Run Postman smoke tests
+        working-directory: test
+        run: |
+          newman run auth.json --env-var "baseUrl=http://localhost:9100" --reporters cli
+          newman run watches.json --env-var "baseUrl=http://localhost:9100" --reporters cli
+          newman run contacts.json --env-var "baseUrl=http://localhost:9100" --reporters cli
