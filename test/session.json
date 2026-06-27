@@ -1,7 +1,7 @@
 {
   "_": {
     "postman_variable_scope": "environment",
-    "postman_exported_at": "2026-06-27T10:18:07.966Z",
+    "postman_exported_at": "2026-06-27T11:44:16.144Z",
     "postman_exported_using": "Newman/6.2.2"
   },
   "id": "a4c22d17-732e-462b-a1c7-bfca65a26e97",
@@ -44,12 +44,12 @@
     },
     {
       "type": "any",
-      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTNmODhlNmEwOTY4OTkyZWYyY2M2MjQiLCJyb2xlIjoiUk9MRV9VU0VSIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTc4MjU1NTQxOSwiZXhwIjoxNzgzMTYwMjE5fQ.q0LMmA1GjBKiklJ6SuyMTN27j7bMSf9qU1mrdcutr8k",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTNmODhlNmEwOTY4OTkyZWYyY2M2MjQiLCJyb2xlIjoiUk9MRV9VU0VSIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTc4MjU2MDM4NiwiZXhwIjoxNzgzMTY1MTg2fQ.FkkFy0wUr84a7LGllekKk6r7XG6nfYeNLNcg4jw6DxU",
       "key": "userToken"
     },
     {
       "type": "any",
-      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTNmODRiZWEwOTY4OTkyZWYyY2M1MWQiLCJyb2xlIjoiUk9MRV9NQU5BR0VSIiwibmFtZSI6IkFkbWluIENhc3RlbGxhbiIsImlhdCI6MTc4MjU1NTQxOCwiZXhwIjoxNzgzMTYwMjE4fQ.Bq7VM0t3SK8zOtBdnUVGD0Gw_fRNy5NCUcrwjufsrpA",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTNmODRiZWEwOTY4OTkyZWYyY2M1MWQiLCJyb2xlIjoiUk9MRV9NQU5BR0VSIiwibmFtZSI6IkFkbWluIENhc3RlbGxhbiIsImlhdCI6MTc4MjU2MDM4NSwiZXhwIjoxNzgzMTY1MTg1fQ.YkeV30HHMJ0H-x_bJkgJsgukh19sxImw2PLEhJgEEp8",
       "key": "adminToken"
     },
     {
@@ -64,22 +64,22 @@
     },
     {
       "type": "any",
-      "value": "6a3fa32ba1880b70df4f1c5f",
+      "value": "6a3fb6aa060b79903cc19d7e",
       "key": "orderId"
     },
     {
       "type": "any",
-      "value": "CAST-A06C762C",
+      "value": "CAST-7EBB7641",
       "key": "orderNumber"
     },
     {
       "type": "any",
-      "value": "6a3fa341a1880b70df4f1c87",
+      "value": "6a3fb701060b79903cc19da6",
       "key": "productId"
     },
     {
       "type": "any",
-      "value": "6a3fa349a1880b70df4f1ca4",
+      "value": "6a3fb72c060b79903cc19dc3",
       "key": "couponId"
     },
     {
@@ -104,12 +104,12 @@
     },
     {
       "type": "any",
-      "value": "6a3fa350a1880b70df4f1cbc",
+      "value": "6a3fb74e060b79903cc19ddb",
       "key": "cancelOrderId"
     },
     {
       "type": "any",
-      "value": "CAST-44B93AE7",
+      "value": "CAST-3E78D0C1",
       "key": "cancelOrderNumber"
     },
     {
@@ -119,11 +119,11 @@
     },
     {
       "type": "any",
-      "value": "6a3fa34da1880b70df4f1cb1",
+      "value": "6a3fb73d060b79903cc19dd0",
       "key": "addressId"
     }
   ],
   "_postman_variable_scope": "environment",
-  "_postman_exported_at": "2026-06-27T10:18:10.990Z",
+  "_postman_exported_at": "2026-06-27T11:44:22.019Z",
   "_postman_exported_using": "Newman/6.2.2"
 }
