@@ -102,14 +102,26 @@ jobs:
           cp frontend/.env.example frontend/.env
           docker compose up -d --build
 
-      - name: Wait for backend health
+      - name: Wait for backend health and seed completion
         run: |
-          echo "Waiting for backend..."
+          echo "Waiting for backend health check..."
           for i in $(seq 1 30); do
             if curl -s http://localhost:9100/api/health > /dev/null 2>&1; then
               echo "Backend is ready!"
               break
             fi
+            sleep 5
+          done
+          echo "Waiting for seed data (admin login)..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:9100/api/v1/auth/login \
+              -H "Content-Type: application/json" \
+              -d '{"email":"admin@castellan.com","password":"Admin123!"}')
+            if [ "$STATUS" = "200" ]; then
+              echo "Seed data ready! Admin login successful."
+              break
+            fi
+            echo "  Attempt $i: got status $STATUS, waiting..."
             sleep 5
           done
 
