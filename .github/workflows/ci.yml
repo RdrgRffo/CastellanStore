@@ -42,7 +42,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: backend
-        run: npm ci
+        run: npm install
 
       - name: Build (TypeScript)
         working-directory: backend
@@ -102,9 +102,9 @@ jobs:
           cp frontend/.env.example frontend/.env
           docker compose up -d --build
 
-      - name: Wait for backend health
+      - name: Wait for backend health and seed completion
         run: |
-          echo "Waiting for backend..."
+          echo "Waiting for backend health check..."
           for i in $(seq 1 30); do
             if curl -s http://localhost:9100/api/health > /dev/null 2>&1; then
               echo "Backend is ready!"
@@ -112,10 +112,22 @@ jobs:
             fi
             sleep 5
           done
+          echo "Waiting for seed data (admin login)..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:9100/api/v1/auth/login \
+              -H "Content-Type: application/json" \
+              -d '{"email":"admin@castellan.com","password":"Admin123!"}')
+            if [ "$STATUS" = "200" ]; then
+              echo "Seed data ready! Admin login successful."
+              break
+            fi
+            echo "  Attempt $i: got status $STATUS, waiting..."
+            sleep 5
+          done
 
       - name: Run Postman smoke tests
         working-directory: test
         run: |
-          newman run auth.json --env-var "baseUrl=http://localhost:9100" --reporters cli
-          newman run watches.json --env-var "baseUrl=http://localhost:9100" --reporters cli
-          newman run contacts.json --env-var "baseUrl=http://localhost:9100" --reporters cli
+          newman run auth.json --environment session.json --env-var "baseUrl=http://localhost:9100" --reporters cli
+          newman run watches.json --environment session.json --env-var "baseUrl=http://localhost:9100" --reporters cli
+          newman run contacts.json --environment session.json --env-var "baseUrl=http://localhost:9100" --reporters cli
