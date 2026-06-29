@@ -2,7 +2,7 @@
 
 **E-commerce de relojería artesanal — Full-Stack con Node.js, React, TypeScript y MongoDB**
 
-Plataforma completa de comercio electrónico con autenticación JWT + OAuth2, panel de administración con RBAC, carrito de compras sincronizado, sistema de cupones inteligente y facturación automatizada. Arquitectura modular con eventos asíncronos y pruebas de integración.
+Plataforma completa de comercio electrónico con autenticación JWT + OAuth2, panel de administración con RBAC, carrito de compras sincronizado, sistema de cupones inteligente, facturación automatizada, pagos con Stripe, almacenamiento de imágenes con MinIO (S3), wishlist, reviews, y más. Arquitectura modular con eventos asíncronos y suite completa de testing.
 
 ---
 
@@ -11,13 +11,16 @@ Plataforma completa de comercio electrónico con autenticación JWT + OAuth2, pa
 - **Autenticación Dual**: Registro/Login tradicional (JWT + bcrypt) integrado con Social Login (Google OAuth2). Perfiles de usuario con actualización de datos.
 - **Control de Acceso (RBAC)**: Roles diferenciados (`ROLE_USER` y `ROLE_MANAGER`) con middleware de autorización estricto en endpoints críticos de administración.
 - **Carrito Sincronizado**: Persistencia local (localStorage) + sincronización automática con el backend cuando el usuario inicia sesión. Sin pérdida de datos entre dispositivos.
+- **Wishlist**: Lista de deseos persistente con toggle desde catálogo y detalle de producto.
+- **Reviews y Valoraciones**: Sistema de reseñas con puntuación (1-5 estrellas) asociadas a productos y usuarios.
 - **Fidelización Automatizada (Event-Driven)**: Sistema de eventos asíncronos (EventBus) que dispara listeners al registrar usuarios (cupón de bienvenida `BIENVENIDA10`) y al confirmar pedidos (generación de factura + email transaccional). Cron job diario para cupones de cumpleaños.
-- **Panel de Administración Completo**: Dashboard con métricas en tiempo real (pedidos, ingresos, stock bajo), CRUD de productos, gestión de pedidos con transiciones de estado, y administración de cupones con búsqueda y paginación.
+- **Panel de Administración Completo**: Dashboard con métricas en tiempo real (pedidos, ingresos, stock bajo), CRUD de productos, gestión de pedidos con transiciones de estado, administración de cupones, usuarios y registro de actividad con búsqueda y paginación.
 - **Sistema de Auditoría con Rollback**: Registro detallado de todas las acciones administrativas en `ActivityLog` con captura de `previousState`. Posibilidad de revertir cambios (rollback) directamente desde el panel de auditoría para acciones como actualización/eliminación de productos, cupones, cambios de rol, bloqueos y cambios de estado de pedidos.
 - **Componentes Admin Reutilizables**: `AdminTable` con ordenación por columnas, paginación homogénea (20 registros) y `AdminModal` para visualización de detalle al hacer clic en cualquier fila, aplicado consistentemente en todas las tablas del panel (usuarios, productos, pedidos, cupones, actividad).
 - **Pagos con Stripe**: Integración completa con Stripe (test mode) incluyendo `PaymentService` con creación de PaymentIntents, webhook para eventos `payment_intent.succeeded`, `charge.refunded`, y sistema de reembolsos (refunds) desde el panel admin. Lazy initialization para evitar crashes cuando Stripe no está configurado.
 - **Webhook Event-Driven**: El webhook de Stripe se integra con el EventBus de la aplicación: al confirmarse un pago, emite `ORDER_CONFIRMED_EVENT` (genera factura PDF) y `ORDER_STATUS_CHANGED_EVENT` (envía email al cliente), manteniendo toda la cadena de eventos desacoplada.
-- **Suite de Testing Automatizado**: 8 colecciones de Postman/Newman con 70+ aserciones que cubren autenticación, catálogo, pedidos, cupones, contacto, facturación y administración con verificación de RBAC.
+- **Almacenamiento de Imágenes con MinIO (S3)**: Subida, gestión y servido de imágenes de productos mediante MinIO compatible con API S3 de AWS.
+- **Suite de Testing Automatizado**: 20+ colecciones de Postman/Newman con aserciones que cubren autenticación, catálogo, pedidos, cupones, contacto, facturación, pagos, direcciones, wishlist, reviews, imágenes y administración con verificación de RBAC.
 - **Consistencia de Inventario**: Operaciones atómicas en MongoDB para evitar condiciones de carrera (race conditions) en la actualización de stock.
 
 ---
@@ -41,31 +44,42 @@ graph TD
     G --> N[admin/]
     G --> O[loyalty/]
     G --> P[contact/]
-    H & I & J & K & L & M & N & O & P --> Q[(MongoDB)]
-    R[Google OAuth2] --> H
-    S[Cron Job] --> O
-    T[EventBus] -->|UserRegistered| O
-    T -->|OrderConfirmed| M
+    G --> Q[payments/]
+    G --> R[reviews/]
+    G --> S[wishlist/]
+    G --> T[address/]
+    G --> U[images/]
+    G --> V[activityLog/]
+    G --> W[notifications/]
+    H & I & J & K & L & M & N & O & P & Q & R & S & T & U & V & W --> X[(MongoDB)]
+    Y[Google OAuth2] --> H
+    Z[Cron Job] --> O
+    AA[EventBus] -->|UserRegistered| O
+    AA -->|OrderConfirmed| M
+    AB[MinIO S3] --> I
+    AC[Stripe] --> Q
 ```
 
-### Stack Tecnologico
+### Stack Tecnológico
 
-| Capa | Tecnologia | Version |
+| Capa | Tecnología | Versión |
 |------|-----------|---------|
-| **Frontend** | React + Vite + Tailwind CSS | React 19 / Vite 8 / Tailwind 4 |
-| **Backend** | Node.js + Express + TypeScript | Node 22 / Express 5 / TS 5 |
+| **Frontend** | React + Vite + Tailwind CSS | React 19 / Vite 8 / Tailwind 3 |
+| **Backend** | Node.js + Express + TypeScript | Node 22 / Express 4 / TS 5 |
 | **Base de Datos** | MongoDB + Mongoose | MongoDB 7 / Mongoose 8 |
-| **Autenticacion** | JWT (jsonwebtoken) + bcryptjs + Google OAuth2 | -- |
+| **Almacenamiento** | MinIO (S3-compatible) | latest |
+| **Autenticación** | JWT (jsonwebtoken) + bcryptjs + Google OAuth2 | -- |
+| **Pagos** | Stripe | SDK 22 |
 | **Testing** | Postman / Newman (CLI) | Newman 6 |
 | **Tooling** | tsx (dev server), ESLint, Vite | -- |
 
 ---
 
-## Instalacion y Despliegue Local
+## Instalación y Despliegue Local
 
-### Opcion 1: Docker Compose (recomendado)
+### Opción 1: Docker Compose (recomendado)
 
-Levanta los 3 contenedores (frontend + backend + MongoDB) con un solo comando:
+Levanta los 4 contenedores (frontend + backend + MongoDB + MinIO) con un solo comando:
 
 ```bash
 # 1. Clonar el repositorio
@@ -75,41 +89,30 @@ cd CastellanStore
 # 2. Configurar variables de entorno (opcional, valores por defecto incluidos)
 cp frontend/.env.example frontend/.env
 cp backend/.env.example backend/.env
-# Editar frontend/.env y backend/.env con tus credenciales de Google OAuth si las tienes
+# Editar frontend/.env y backend/.env con tus credenciales si las tienes
 
-# 3. Iniciar la aplicacion (asigna puertos libres automaticamente)
-powershell -ExecutionPolicy Bypass -File start.ps1
-```
-
-El script `start.ps1` se encarga de:
-- Verificar que Docker esté corriendo
-- Limpiar contenedores previos
-- Asignar puertos libres automáticamente (>8000)
-- Generar la configuración de puertos dinámica
-- Abrir una ventana con los logs de Docker en tiempo real
-- Esperar a que el backend responda y mostrar un resumen con las URLs de acceso
-
-También puedes ejecutar manualmente:
-
-```bash
+# 3. Iniciar la aplicación
 docker compose up --build
 ```
 
-La aplicacion estara disponible en (puertos por defecto):
+La aplicación estará disponible en (puertos por defecto):
 - **Frontend:** http://localhost:9099
 - **Backend API:** http://localhost:9100
-- **MongoDB:** localhost:27018 (mapeado desde 27017 interno)
+- **MongoDB:** localhost:27017
+- **MinIO Console:** http://localhost:9001 (admin/minioadmin)
+- **MinIO API:** http://localhost:9000
 
-> El seed automatico crea un usuario administrador por defecto:
+> El seed automático crea un usuario administrador por defecto:
 > - **Email:** `admin@castellan.com`
-> - **Contrasena:** `Admin123!`
+> - **Contraseña:** `Admin123!`
 
-### Opcion 2: Desarrollo local (sin Docker)
+### Opción 2: Desarrollo local (sin Docker)
 
 #### Requisitos previos
 
 - Node.js >= 22
 - MongoDB >= 7 (local o Docker)
+- MinIO (local o Docker) — opcional, para imágenes
 - npm >= 10
 
 #### Paso a paso
@@ -125,48 +128,65 @@ cd backend && npm install && cd ..
 
 # 3. Configurar variables de entorno
 cp frontend/.env.example frontend/.env          # Frontend (VITE_GOOGLE_CLIENT_ID)
-cp backend/.env.example backend/.env            # Backend (JWT_SECRET, MONGO_URI, GOOGLE_*)
+cp backend/.env.example backend/.env            # Backend (JWT_SECRET, MONGO_URI, GOOGLE_*, MINIO_*, etc.)
 
-# 4. Iniciar MongoDB (si usas Docker)
+# 4. Iniciar MongoDB y MinIO (si usas Docker)
 docker run -d -p 27017:27017 --name mongodb mongo:7
+docker run -d -p 9000:9000 -p 9001:9001 --name minio \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin \
+  minio/minio server /data --console-address ":9001"
 
 # 5. Arrancar el servidor de desarrollo
-cd backend && npm run dev    # Backend -> http://localhost:9100
-cd ../frontend && npm run dev # Frontend -> http://localhost:5173
+cd backend && npm run dev      # Backend -> http://localhost:9100
+cd ../frontend && npm run dev  # Frontend -> http://localhost:5173
 ```
 
 > **Variables de entorno requeridas:**
-> - `backend/.env`: `JWT_SECRET`, `MONGO_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+> - `backend/.env`: `JWT_SECRET`, `MONGO_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MINIO_*`
 > - `frontend/.env`: `VITE_GOOGLE_CLIENT_ID`
 >
-> El seed automatico crea un usuario administrador por defecto:
+> El seed automático crea un usuario administrador por defecto:
 > - **Email:** `admin@castellan.com`
 
 ---
 
-## Suite de Testing y Calidad de Codigo
+## Suite de Testing y Calidad de Código
 
-El proyecto incluye una suite completa de **pruebas de integracion** sobre la API REST, ejecutables con un solo comando:
+El proyecto incluye una suite completa de **pruebas de integración** sobre la API REST, ejecutables con un solo comando:
 
 ```bash
 cd test && powershell -ExecutionPolicy Bypass -File run-tests.ps1
 # O en Linux/Mac: bash run-tests.sh
 ```
 
-### Colecciones incluidas (8 suites, 70+ aserciones)
+### Colecciones incluidas (20+ suites)
 
 | Suite | Endpoints | Cobertura |
 |-------|-----------|-----------|
-| **Auth** | `POST /register`, `/login`, `/google`, `PUT /profile` | Registro, login, Google OAuth, actualizacion de perfil, errores 401/409 |
-| **Watches** | `GET /watches`, `/watches/featured`, `/watches/:id` | Paginacion, busqueda, filtros, IDs invalidos |
-| **Orders** | `POST /orders` | Creacion con autenticacion, generacion de orderNumber |
-| **Coupons** | `POST /coupons/validate` | Validacion con/sin minimo, cupones inexistentes, autenticacion |
-| **Contacts** | `POST /contacts` | Envio de mensajes, validacion de campos obligatorios |
+| **Auth** | `POST /register`, `/login`, `/google`, `PUT /profile` | Registro, login, Google OAuth, actualización de perfil, errores 401/409 |
+| **Watches** | `GET /watches`, `/watches/featured`, `/watches/:id` | Paginación, búsqueda, filtros, IDs inválidos |
+| **Cart** | `GET /cart`, `POST /cart`, `PUT /cart/:id`, `DELETE /cart` | CRUD completo del carrito |
+| **Orders** | `POST /orders` | Creación con autenticación, generación de orderNumber |
+| **Cancel Order** | `POST /orders/:id/cancel` | Cancelación de pedidos |
+| **Coupons** | `POST /coupons/validate` | Validación con/sin mínimo, cupones inexistentes, autenticación |
+| **Contacts** | `POST /contacts` | Envío de mensajes, validación de campos obligatorios |
 | **Invoices** | `GET /invoices/:orderNumber` | Facturas existentes y no encontradas |
-| **Admin Products** | `GET /admin/products`, `PATCH /admin/products/:id/stock` | CRUD, stock negativo, RBAC (403 para ROLE_USER, 401 sin token) |
+| **Invoice PDF** | `GET /invoices/:orderNumber/pdf` | Descarga de PDF de factura |
+| **Payments** | `POST /payments/create-intent`, webhooks | Creación de PaymentIntent, eventos de Stripe |
+| **Addresses** | `GET /addresses`, `POST /addresses`, `PUT /addresses/:id` | CRUD de direcciones de envío |
+| **Wishlist** | `GET /wishlist`, `POST /wishlist`, `DELETE /wishlist/:id` | CRUD de lista de deseos |
+| **Reviews** | `GET /reviews/:productId`, `POST /reviews` | Reseñas de productos |
+| **Images** | `POST /images/upload` | Subida de imágenes a MinIO |
+| **Session** | `GET /auth/session` | Verificación de sesión activa |
+| **Admin Dashboard** | `GET /admin/dashboard` | Métricas y estadísticas |
+| **Admin Products** | `GET /admin/products`, `POST /admin/products`, `PATCH /admin/products/:id/stock` | CRUD, stock negativo, RBAC |
 | **Admin Orders** | `GET /admin/orders`, `PATCH /admin/orders/:id/status` | Filtros, transiciones de estado, RBAC |
+| **Admin Users** | `GET /admin/users`, `PATCH /admin/users/:id/role` | Gestión de usuarios, cambio de roles |
+| **Admin Coupons** | `GET /admin/coupons`, `POST /admin/coupons`, `PATCH /admin/coupons/:id` | CRUD de cupones desde admin |
+| **Admin Activity Logs** | `GET /admin/activity-logs` | Registro de auditoría |
 
-Los archivos de coleccion estan en `test/*.json` y pueden importarse directamente en **Postman** o ejecutarse con **Newman**.
+Los archivos de colección están en `test/*.json` y pueden importarse directamente en **Postman** o ejecutarse con **Newman**.
 
 ---
 
@@ -174,51 +194,66 @@ Los archivos de coleccion estan en `test/*.json` y pueden importarse directament
 
 ```
 castellanstore/
-├── frontend/                # Frontend (React + Vite)
-│   ├── public/              # Assets estaticos (imagenes, db.json)
+├── frontend/                    # Frontend (React + Vite)
+│   ├── public/                  # Assets estáticos (imágenes, db.json)
+│   │   ├── db.json              # Datos semilla para json-server
+│   │   └── images/              # Imágenes de productos
 │   ├── src/
-│   │   ├── components/      # Componentes reutilizables
-│   │   ├── context/         # AuthContext, CartContext
-│   │   ├── hooks/           # Custom hooks (useAuth, useCart, useProducts)
-│   │   ├── pages/           # Paginas de la aplicacion
-│   │   │   ├── Admin/       # Panel de administracion
-│   │   │   ├── Auth/        # Login / Registro
-│   │   │   ├── Cart/        # Carrito
-│   │   │   ├── Checkout/    # Proceso de compra
-│   │   │   ├── Help/        # FAQ, Envios, Garantia, Contacto
-│   │   │   ├── Home/        # Pagina principal
-│   │   │   ├── Orders/      # Mis pedidos
-│   │   │   ├── Product/     # Detalle de producto
-│   │   │   ├── Profile/     # Perfil de usuario
-│   │   │   └── Shop/        # Catalogo
-│   │   └── services/        # api.js (capa de acceso a datos)
+│   │   ├── components/          # Componentes reutilizables
+│   │   │   ├── dashboard/       # Componentes del dashboard admin
+│   │   │   ├── layout/          # Header, Footer, Sidebar, Hero
+│   │   │   └── ui/              # AdminTable, AdminModal, Badge, etc.
+│   │   ├── context/             # AuthContext, CartContext, ToastContext, WishlistContext
+│   │   ├── data/                # Datos estáticos (spanishCities.js)
+│   │   ├── hooks/               # Custom hooks (useAuth, useCart, useProducts, etc.)
+│   │   ├── pages/               # Páginas de la aplicación
+│   │   │   ├── About/           # Acerca de
+│   │   │   ├── Admin/           # Panel de administración
+│   │   │   ├── Auth/            # Login / Registro
+│   │   │   ├── Cart/            # Carrito
+│   │   │   ├── Checkout/        # Proceso de compra
+│   │   │   ├── Compare/         # Comparador de productos
+│   │   │   ├── Help/            # FAQ, Envíos, Garantía, Contacto
+│   │   │   ├── Home/            # Página principal
+│   │   │   ├── NotFound/        # Página 404
+│   │   │   ├── Orders/          # Mis pedidos
+│   │   │   ├── Product/         # Detalle de producto
+│   │   │   ├── Profile/         # Perfil de usuario
+│   │   │   └── Shop/            # Catálogo
+│   │   ├── services/            # api.js, apiClient.js, cartService.js, couponService.js
+│   │   └── utils/               # formatPrice.js, FormValidator.js, specLabels.js
 │   ├── package.json
 │   ├── vite.config.js
 │   └── Dockerfile
-├── backend/                  # Backend (Express + TypeScript)
+├── backend/                      # Backend (Express + TypeScript)
 │   ├── src/
-│   │   ├── admin/           # Dashboard, cupones (panel admin)
-│   │   ├── auth/            # Autenticacion, usuarios, JWT, Google OAuth
-│   │   ├── cart/            # Carrito de compras (modelo + servicio)
-│   │   ├── catalog/         # Catalogo de productos (watches)
-│   │   ├── config/          # Conexion a MongoDB
-│   │   ├── contact/         # Formulario de contacto
-│   │   ├── coupons/         # Cupones de descuento
-│   │   ├── invoicing/       # Facturacion + listener de eventos
-│   │   ├── loyalty/         # Fidelizacion (cupon bienvenida, cumpleanos)
-│   │   ├── notifications/   # Email transaccional (Resend + plantillas HTML)
-│   │   ├── orders/          # Pedidos + servicio
-│   │   └── shared/          # Middleware, utils, eventos, ApiResponse
+│   │   ├── activityLog/         # Registro de auditoría
+│   │   ├── address/             # Direcciones de envío
+│   │   ├── admin/               # Dashboard, cupones, usuarios (panel admin)
+│   │   ├── auth/                # Autenticación, usuarios, JWT, Google OAuth
+│   │   ├── cart/                # Carrito de compras (modelo + servicio)
+│   │   ├── catalog/             # Catálogo de productos (watches)
+│   │   ├── config/              # Conexión a MongoDB
+│   │   ├── contact/             # Formulario de contacto
+│   │   ├── coupons/             # Cupones de descuento
+│   │   ├── images/              # Subida y gestión de imágenes (MinIO S3)
+│   │   ├── invoicing/           # Facturación + listener de eventos
+│   │   ├── loyalty/             # Fidelización (cupón bienvenida, cumpleaños)
+│   │   ├── notifications/       # Email transaccional (Resend + plantillas HTML)
+│   │   ├── orders/              # Pedidos + servicio
+│   │   ├── payments/            # Integración con Stripe
+│   │   ├── reviews/             # Reseñas de productos
+│   │   ├── shared/              # Middleware, utils, eventos, ApiResponse
+│   │   └── wishlist/            # Lista de deseos
 │   ├── package.json
 │   └── Dockerfile
-├── docs/                    # Documentación del proyecto
-│   ├── studyCase.md         # Caso de estudio detallado
-│   └── agentGuide.md        # Guía técnica para el agente IA
-├── test/                    # Colecciones Postman / Newman
-├── .github/workflows/       # CI/CD Pipeline (GitHub Actions)
-├── docker-compose.yml
-├── start.ps1                # Script de inicio (PowerShell)
-├── start.sh                 # Script de inicio (Bash)
+├── docs/                        # Documentación del proyecto
+│   ├── studyCase.md             # Caso de estudio detallado
+│   └── agentGuide.md            # Guía técnica para el agente IA
+├── test/                        # Colecciones Postman / Newman (20+ suites)
+├── .github/workflows/           # CI/CD Pipeline (GitHub Actions)
+├── docker-compose.yml           # 4 servicios: frontend + backend + mongodb + minio
+├── Dockerfile                   # Frontend (multi-stage: build + nginx)
 └── README.md
 ```
 
@@ -285,13 +320,42 @@ Las plantillas HTML incluyen:
 
 ---
 
-## Decisiones Tecnicas
+## Almacenamiento de Imágenes (MinIO S3)
 
-- **Arquitectura modular por dominio** en el backend (`auth/`, `orders/`, `coupons/`, etc.) en lugar de una estructura MVC plana. Cada modulo es autocontenido con su modelo, servicio, controlador y rutas.
-- **EventBus propio** (patron Observer) para desacoplar flujos secundarios: el registro de usuarios dispara la creacion del perfil de fidelidad y la asignacion del cupon de bienvenida sin bloquear la respuesta HTTP.
-- **Operaciones atomicas** (`findOneAndUpdate` con `$inc`) para el control de stock, evitando race conditions en escenarios de alta concurrencia.
+El proyecto utiliza **MinIO** como almacenamiento de objetos compatible con S3 para las imágenes de productos.
+
+### Configuración
+
+Variables en `backend/.env`:
+
+```env
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_PUBLIC_URL=http://localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=castellan-images
+```
+
+### Endpoints
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/api/images/upload` | Sube una imagen y devuelve la URL pública |
+| `GET` | `/api/images/:filename` | Obtiene una imagen por nombre |
+
+> En Docker Compose, MinIO se configura automáticamente con healthcheck y volúmenes persistentes.
+
+---
+
+## Decisiones Técnicas
+
+- **Arquitectura modular por dominio** en el backend (`auth/`, `orders/`, `coupons/`, etc.) en lugar de una estructura MVC plana. Cada módulo es autocontenido con su modelo, servicio, controlador y rutas.
+- **EventBus propio** (patrón Observer) para desacoplar flujos secundarios: el registro de usuarios dispara la creación del perfil de fidelidad y la asignación del cupón de bienvenida sin bloquear la respuesta HTTP.
+- **Operaciones atómicas** (`findOneAndUpdate` con `$inc`) para el control de stock, evitando race conditions en escenarios de alta concurrencia.
 - **Capa de servicios (`api.js`)** que abstrae `apiClient` y normaliza las respuestas, permitiendo que los componentes consuman datos sin conocer la estructura de red subyacente.
-- **Carrito hibrido**: localStorage para usuarios anonimos + API sincronizada para usuarios autenticados, con fusion automatica al iniciar sesion.
+- **Carrito híbrido**: localStorage para usuarios anónimos + API sincronizada para usuarios autenticados, con fusión automática al iniciar sesión.
+- **Almacenamiento S3 con MinIO**: Las imágenes se almacenan externamente en un bucket S3 compatible, permitiendo escalabilidad y separación de concerns.
+- **Frontend en JSX (no TypeScript)**: El frontend utiliza JavaScript con JSX para mayor simplicidad, mientras que el backend está completamente tipado con TypeScript.
 
 ---
 
